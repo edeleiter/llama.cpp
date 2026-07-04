@@ -952,6 +952,12 @@ class GGUFWriter:
     def add_target_hidden_size(self, value: int) -> None:
         self.add_uint32(Keys.LLM.TARGET_HIDDEN_SIZE.format(arch=self.arch), value)
 
+    def add_markov_rank(self, value: int) -> None:
+        self.add_uint32(Keys.LLM.MARKOV_RANK.format(arch=self.arch), value)
+
+    def add_markov_head_type(self, value: str) -> None:
+        self.add_string(Keys.LLM.MARKOV_HEAD_TYPE.format(arch=self.arch), value)
+
     def add_norm_before_residual(self, value: bool) -> None:
         self.add_bool(Keys.LLM.NORM_BEFORE_RESIDUAL.format(arch=self.arch), value)
 

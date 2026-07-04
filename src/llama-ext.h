@@ -124,3 +124,8 @@ LLAMA_API llama_context * llama_get_ctx_other(struct llama_context * ctx);
 LLAMA_API const int32_t * llama_model_target_layer_ids  (const struct llama_model * model);
 // returns the number of extracted layers from target model
 LLAMA_API uint32_t        llama_model_target_layer_ids_n(const struct llama_model * model);
+
+// dspark markov head: F32 weight tensors + rank, snapshotted to host by the speculative driver
+LLAMA_API const struct ggml_tensor * llama_model_markov_w1  (const struct llama_model * model);
+LLAMA_API const struct ggml_tensor * llama_model_markov_w2  (const struct llama_model * model);
+LLAMA_API uint32_t                   llama_model_markov_rank(const struct llama_model * model);

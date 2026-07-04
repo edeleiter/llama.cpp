@@ -602,6 +602,11 @@ struct llama_model {
     // unified vector to store target-model extracted layer ids in eagle3, dflash, etc.
     std::vector<int32_t> target_layer_ids;
 
+    // dspark markov head (applied as a logit bias in the speculative driver)
+    struct ggml_tensor * markov_w1 = nullptr;  // prev-token embedding [markov_rank, n_vocab]
+    struct ggml_tensor * markov_w2 = nullptr;  // rank -> vocab logit bias
+    uint32_t markov_rank = 0;
+
     std::vector<llama_layer> layers;
 
     //Dense linear projections for SentenceTransformers models like embeddinggemma

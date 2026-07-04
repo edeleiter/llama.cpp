@@ -673,3 +673,67 @@ class DFlashModel(Qwen3Model):
         if not name.startswith("model."):
             name = "model." + name
         return super().filter_tensors((name, gen))
+
+
+@ModelBase.register("Qwen3DSparkModel", "Qwen35DSparkModel")
+class DSparkModel(Qwen3Model):
+    """DSpark speculative-decoding draft. Architecturally DFlash + a Markov-head
+    logit bias, so it reuses the DFlash GGUF layout (fc + hidden_norm + a plain
+    Qwen3 decoder stack, borrowing tok_embd/output from the target) and adds two
+    markov tensors."""
+
+    model_arch = gguf.MODEL_ARCH.DSPARK
+
+    # Dropped from the draft GGUF: embed_tokens + lm_head are exact copies of the
+    # target's (borrowed at load time, like DFlash); the confidence head is
+    # inference-optional (spec decoding is lossless without it).
+    _DROP = ("embed_tokens", "lm_head", "confidence_head", "rotary_emb")
+
+    def set_vocab(self):
+        if self.target_model_dir is None:
+            raise ValueError(
+                "DSpark draft model requires --target-model-dir (the target model "
+                "directory containing the tokenizer)."
+            )
+        logger.info(f"DSpark: using tokenizer from target model: {self.target_model_dir}")
+        original_dir = self.dir_model
+        self.dir_model = self.target_model_dir
+        super().set_vocab()
+        self.dir_model = original_dir
+
+        mask_token_id = self.hparams.get("mask_token_id")
+        if mask_token_id is not None:
+            self.gguf_writer.add_mask_token_id(mask_token_id)
+
+    def set_gguf_parameters(self):
+        super().set_gguf_parameters()
+        self.gguf_writer.add_block_size(int(self.hparams["block_size"]))
+
+        target_layer_ids = self.hparams.get("target_layer_ids", [])
+        if target_layer_ids:
+            # +1 to match extract_context_feature (hidden_states[layer_id + 1]) --
+            # the same convention DFlash uses.
+            self.gguf_writer.add_target_layers([i + 1 for i in target_layer_ids])
+
+        markov_rank = int(self.hparams.get("markov_rank", 0))
+        self.gguf_writer.add_markov_rank(markov_rank)
+        if markov_rank > 0:
+            self.gguf_writer.add_markov_head_type(
+                str(self.hparams.get("markov_head_type", "vanilla"))
+            )
+
+    def tensor_force_quant(self, name, new_name, bid, n_dims):
+        # the markov weights are read raw (F32) by the driver's CPU matvec, so keep
+        # them out of any quantization even for a quantized draft.
+        if "markov_head" in name:
+            return gguf.GGMLQuantizationType.F32
+        return super().tensor_force_quant(name, new_name, bid, n_dims)
+
+    @classmethod
+    def filter_tensors(cls, item: tuple[str, Callable[[], Tensor]]) -> tuple[str, Callable[[], Tensor]] | None:
+        name, gen = item
+        if any(dropped in name for dropped in cls._DROP):
+            return None
+        if not name.startswith("model."):
+            name = "model." + name
+        return super().filter_tensors((name, gen))

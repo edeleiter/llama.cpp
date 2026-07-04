@@ -145,6 +145,7 @@ enum llm_arch {
     LLM_ARCH_MELLUM,
     LLM_ARCH_EAGLE3,
     LLM_ARCH_DFLASH,
+    LLM_ARCH_DSPARK,
     LLM_ARCH_UNKNOWN,
 };
 
@@ -611,6 +612,8 @@ enum llm_tensor {
     LLM_TENSOR_MASKED_EMBD_ORDERING,
     LLM_TENSOR_FC,
     LLM_TENSOR_D2T,
+    LLM_TENSOR_MARKOV_W1,
+    LLM_TENSOR_MARKOV_W2,
 };
 
 

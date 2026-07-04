@@ -1290,6 +1290,14 @@ class TensorNameMap:
             "model.fc", # dflash
         ),
 
+        MODEL_TENSOR.MARKOV_W1: (
+            "model.markov_head.markov_w1", # dspark
+        ),
+
+        MODEL_TENSOR.MARKOV_W2: (
+            "model.markov_head.markov_w2", # dspark
+        ),
+
         MODEL_TENSOR.CLS: (
             "classifier",       # jina
             "classifier.dense", # roberta
